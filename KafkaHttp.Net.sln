@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaHttp.Net", "src\KafkaHttp.Net\KafkaHttp.Net.csproj", "{D8E3FF4A-D370-4B8D-A947-E25E71FAD6D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaHttp.Net.TestClient", "test\KafkaHttp.Net.TestClient\KafkaHttp.Net.TestClient.csproj", "{857FA827-A951-4E64-AFF9-E982CFE06653}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaHttp.Net.TestConsole", "test\KafkaHttp.Net.TestConsole\KafkaHttp.Net.TestConsole.csproj", "{857FA827-A951-4E64-AFF9-E982CFE06653}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

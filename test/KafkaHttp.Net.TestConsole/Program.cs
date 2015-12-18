@@ -3,7 +3,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace KafkaHttp.Net.TestClient
+namespace KafkaHttp.Net.TestConsole
 {
     class Program
     {

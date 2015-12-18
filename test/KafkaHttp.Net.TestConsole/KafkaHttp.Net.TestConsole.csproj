@@ -7,8 +7,8 @@
     <ProjectGuid>{857FA827-A951-4E64-AFF9-E982CFE06653}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>KafkaHttp.Net.TestClient</RootNamespace>
-    <AssemblyName>KafkaHttp.Net.TestClient</AssemblyName>
+    <RootNamespace>KafkaHttp.Net.TestConsole</RootNamespace>
+    <AssemblyName>KafkaHttp.Net.TestConsole</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
