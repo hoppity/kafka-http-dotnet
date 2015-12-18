@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaHttp.Net", "src\KafkaHttp.Net\KafkaHttp.Net.csproj", "{D8E3FF4A-D370-4B8D-A947-E25E71FAD6D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaHttp.Net.TestClient", "test\KafkaHttp.Net.TestClient\KafkaHttp.Net.TestClient.csproj", "{857FA827-A951-4E64-AFF9-E982CFE06653}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D8E3FF4A-D370-4B8D-A947-E25E71FAD6D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8E3FF4A-D370-4B8D-A947-E25E71FAD6D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8E3FF4A-D370-4B8D-A947-E25E71FAD6D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8E3FF4A-D370-4B8D-A947-E25E71FAD6D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{857FA827-A951-4E64-AFF9-E982CFE06653}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{857FA827-A951-4E64-AFF9-E982CFE06653}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{857FA827-A951-4E64-AFF9-E982CFE06653}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{857FA827-A951-4E64-AFF9-E982CFE06653}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
