@@ -12,6 +12,8 @@ namespace KafkaHttp.Net
         IKafkaConsumerStream Close(Action action);
         IKafkaConsumerStream Open(Action action = null);
         IKafkaConsumerStream Subscribed(Action action);
+        Task CreateTopic(string name);
+        void Publish(params Message<string>[] payload);
         void Block();
         void Shutdown();
     }
@@ -92,6 +94,34 @@ namespace KafkaHttp.Net
             Console.WriteLine("Subscribing to 'disconnect' event.");
             _socket.On(Socket.EVENT_DISCONNECT, action);
             return this;
+        }
+
+        public Task CreateTopic(string name)
+        {
+            Console.WriteLine("Creating topic...");
+            var waitHandle = new AutoResetEvent(false);
+
+            _socket.On("topicCreated", o => waitHandle.Set());
+            _socket.Emit("createTopic", name);
+
+            var tcs = new TaskCompletionSource<object>();
+            ThreadPool.RegisterWaitForSingleObject(
+                waitObject: waitHandle,
+                callBack: (o, timeout) =>
+                {
+                    Console.WriteLine(timeout ? "Failed to create topic." : "Topic created successfully.");
+                    tcs.SetResult(new TimeoutException("Timed out waiting for response."));
+                },
+                state: null,
+                timeout: TimeSpan.FromSeconds(10),
+                executeOnlyOnce: true);
+            return tcs.Task;
+
+        }
+
+        public void Publish(params Message<string>[] payload)
+        {
+            _socket.Emit("publish", _json.Serialize(payload));
         }
 
         public void Block()
