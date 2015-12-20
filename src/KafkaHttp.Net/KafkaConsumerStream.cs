@@ -10,7 +10,8 @@ namespace KafkaHttp.Net
         IKafkaConsumerStream Message(Action<Message<string>> action);
         IKafkaConsumerStream Error(Action<Exception> action);
         IKafkaConsumerStream Close(Action action);
-        IKafkaConsumerStream Open();
+        IKafkaConsumerStream Open(Action action = null);
+        IKafkaConsumerStream Subscribed(Action action);
         void Block();
         void Shutdown();
     }
@@ -32,19 +33,31 @@ namespace KafkaHttp.Net
             _waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
-        public IKafkaConsumerStream Open()
+        public IKafkaConsumerStream Open(Action action = null)
         {
             Console.WriteLine("Openning conection...");
             _socket.On(Socket.EVENT_CONNECT, () =>
             {
                 Task.Run(() =>
                 {
+                    action?.Invoke();
+
                     Console.WriteLine($"Connected. Subscribing to '{_topic}' as '{_group}'.");
                     var args = _json.Serialize(new { group = _group, topic = _topic });
                     _socket.Emit("subscribe", args);
                 });
             });
 
+            return this;
+        }
+
+        public IKafkaConsumerStream Subscribed(Action action)
+        {
+            _socket.On("subscribed", () =>
+            {
+                Console.WriteLine($"Subscribed to {_topic}.");
+                action();
+            });
             return this;
         }
 
