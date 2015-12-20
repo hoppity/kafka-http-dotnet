@@ -7,7 +7,7 @@ namespace KafkaHttp.Net
 {
     public interface IKafkaConsumerStream : IDisposable
     {
-        IKafkaConsumerStream Message(Action<Message> action);
+        IKafkaConsumerStream Message(Action<Message<string>> action);
         IKafkaConsumerStream Error(Action<Exception> action);
         IKafkaConsumerStream Close(Action action);
         IKafkaConsumerStream Open();
@@ -48,14 +48,13 @@ namespace KafkaHttp.Net
             return this;
         }
 
-        public IKafkaConsumerStream Message(Action<Message> action)
+        public IKafkaConsumerStream Message(Action<Message<string>> action)
         {
             Console.WriteLine("Subscribing to 'message' event.");
             _socket.On("message", o =>
             {
-                Console.WriteLine("Received 'message' event.");
                 var text = o.ToString();
-                var message = _json.Deserialize<Message>(text);
+                var message = _json.Deserialize<Message<string>>(text);
                 action(message);
             });
             return this;
