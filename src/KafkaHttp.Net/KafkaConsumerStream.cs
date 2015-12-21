@@ -8,11 +8,11 @@ namespace KafkaHttp.Net
 {
     public interface IKafkaConsumerStream : IDisposable
     {
-        IKafkaConsumerStream Message(Action<Message<string>> action);
-        IKafkaConsumerStream Error(Action<Exception> action);
-        IKafkaConsumerStream Close(Action action);
-        IKafkaConsumerStream Open(Action action = null);
-        IKafkaConsumerStream Subscribed(Action action);
+        IKafkaConsumerStream OnMessage(Action<Message<string>> action);
+        IKafkaConsumerStream OnError(Action<Exception> action);
+        IKafkaConsumerStream OnClose(Action action);
+        IKafkaConsumerStream OnOpen(Action action = null);
+        IKafkaConsumerStream OnSubscribed(Action action);
         Task CreateTopic(string name);
         void Publish(params Message<string>[] payload);
         void Block();
@@ -36,7 +36,7 @@ namespace KafkaHttp.Net
             _waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
-        public IKafkaConsumerStream Open(Action action = null)
+        public IKafkaConsumerStream OnOpen(Action action = null)
         {
             Trace.TraceInformation("Openning conection...");
             _socket.On(Socket.EVENT_CONNECT, () =>
@@ -54,7 +54,7 @@ namespace KafkaHttp.Net
             return this;
         }
 
-        public IKafkaConsumerStream Subscribed(Action action)
+        public IKafkaConsumerStream OnSubscribed(Action action)
         {
             _socket.On("subscribed", () =>
             {
@@ -64,7 +64,7 @@ namespace KafkaHttp.Net
             return this;
         }
 
-        public IKafkaConsumerStream Message(Action<Message<string>> action)
+        public IKafkaConsumerStream OnMessage(Action<Message<string>> action)
         {
             Trace.TraceInformation("Subscribing to 'message' event.");
             _socket.On("message", o =>
@@ -76,7 +76,7 @@ namespace KafkaHttp.Net
             return this;
         }
 
-        public IKafkaConsumerStream Error(Action<Exception> action)
+        public IKafkaConsumerStream OnError(Action<Exception> action)
         {
             Trace.TraceInformation("Subscribing to error events.");
             Action<object> raise = o =>
@@ -90,7 +90,7 @@ namespace KafkaHttp.Net
             return this;
         }
 
-        public IKafkaConsumerStream Close(Action action)
+        public IKafkaConsumerStream OnClose(Action action)
         {
             Trace.TraceInformation("Subscribing to 'disconnect' event.");
             _socket.On(Socket.EVENT_DISCONNECT, action);

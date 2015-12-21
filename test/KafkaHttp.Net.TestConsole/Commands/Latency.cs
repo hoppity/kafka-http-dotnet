@@ -26,8 +26,8 @@ namespace KafkaHttp.Net.TestConsole.Commands
             {
                 var receivedCount = 0;
                 stream
-                    .Subscribed(() => SetupProducer(stream, topicName, options.BatchSize, options.Messages))
-                    .Message(m =>
+                    .OnSubscribed(() => SetupProducer(stream, topicName, options.BatchSize, options.Messages))
+                    .OnMessage(m =>
                     {
                         if (m.Value == null) return;
 
@@ -41,12 +41,12 @@ namespace KafkaHttp.Net.TestConsole.Commands
                         Console.WriteLine($"Received {options.Messages} messages.");
                         stream.Shutdown();
                     })
-                    .Error(e =>
+                    .OnError(e =>
                     {
                         Console.Error.WriteLine(e);
                     })
-                    .Close(() => Console.WriteLine("Socket closed."))
-                    .Open(() => stream.CreateTopic(topicName).Wait())
+                    .OnClose(() => Console.WriteLine("Socket closed."))
+                    .OnOpen(() => stream.CreateTopic(topicName).Wait())
                     .Block();
             }
 
