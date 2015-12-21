@@ -12,5 +12,7 @@ namespace KafkaHttp.Net.TestConsole.CommandLine
         public int BatchSize { get; set; }
         [Option('m', "messages", Required = true, HelpText = "The total number of messages to send.")]
         public int Messages { get; set; }
+        [Option('t', "trace", HelpText = "Output trace messages from KafkaHttp.Net.", Default = false)]
+        public bool Trace { get; set; }
     }
 }

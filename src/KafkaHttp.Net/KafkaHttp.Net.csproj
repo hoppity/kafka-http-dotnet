@@ -61,6 +61,7 @@
     <Compile Include="KafkaConsumerStream.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WaitHandleExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

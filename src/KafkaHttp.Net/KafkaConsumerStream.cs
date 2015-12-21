@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Quobject.SocketIoClientDotNet.Client;
@@ -37,14 +38,14 @@ namespace KafkaHttp.Net
 
         public IKafkaConsumerStream Open(Action action = null)
         {
-            Console.WriteLine("Openning conection...");
+            Trace.TraceInformation("Openning conection...");
             _socket.On(Socket.EVENT_CONNECT, () =>
             {
                 Task.Run(() =>
                 {
                     action?.Invoke();
 
-                    Console.WriteLine($"Connected. Subscribing to '{_topic}' as '{_group}'.");
+                    Trace.TraceInformation($"Connected. Subscribing to '{_topic}' as '{_group}'.");
                     var args = _json.Serialize(new { group = _group, topic = _topic });
                     _socket.Emit("subscribe", args);
                 });
@@ -57,7 +58,7 @@ namespace KafkaHttp.Net
         {
             _socket.On("subscribed", () =>
             {
-                Console.WriteLine($"Subscribed to {_topic}.");
+                Trace.TraceInformation($"Subscribed to {_topic}.");
                 action();
             });
             return this;
@@ -65,7 +66,7 @@ namespace KafkaHttp.Net
 
         public IKafkaConsumerStream Message(Action<Message<string>> action)
         {
-            Console.WriteLine("Subscribing to 'message' event.");
+            Trace.TraceInformation("Subscribing to 'message' event.");
             _socket.On("message", o =>
             {
                 var text = o.ToString();
@@ -77,10 +78,10 @@ namespace KafkaHttp.Net
 
         public IKafkaConsumerStream Error(Action<Exception> action)
         {
-            Console.WriteLine("Subscribing to error events.");
+            Trace.TraceInformation("Subscribing to error events.");
             Action<object> raise = o =>
             {
-                Console.WriteLine("Received error event.");
+                Trace.TraceWarning("Received error event.");
                 action(new Exception(o.ToString()));
             };
             _socket.On(Socket.EVENT_CONNECT_ERROR, raise);
@@ -91,32 +92,20 @@ namespace KafkaHttp.Net
 
         public IKafkaConsumerStream Close(Action action)
         {
-            Console.WriteLine("Subscribing to 'disconnect' event.");
+            Trace.TraceInformation("Subscribing to 'disconnect' event.");
             _socket.On(Socket.EVENT_DISCONNECT, action);
             return this;
         }
 
         public Task CreateTopic(string name)
         {
-            Console.WriteLine("Creating topic...");
+            Trace.TraceInformation("Creating topic...");
             var waitHandle = new AutoResetEvent(false);
 
             _socket.On("topicCreated", o => waitHandle.Set());
             _socket.Emit("createTopic", name);
 
-            var tcs = new TaskCompletionSource<object>();
-            ThreadPool.RegisterWaitForSingleObject(
-                waitObject: waitHandle,
-                callBack: (o, timeout) =>
-                {
-                    Console.WriteLine(timeout ? "Failed to create topic." : "Topic created successfully.");
-                    tcs.SetResult(new TimeoutException("Timed out waiting for response."));
-                },
-                state: null,
-                timeout: TimeSpan.FromSeconds(10),
-                executeOnlyOnce: true);
-            return tcs.Task;
-
+            return waitHandle.ToTask($"Failed to create topic {name}.", $"Created topic {name}.");
         }
 
         public void Publish(params Message<string>[] payload)

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using KafkaHttp.Net.TestConsole.CommandLine;
 using Metrics;
@@ -12,6 +12,9 @@ namespace KafkaHttp.Net.TestConsole.Commands
         public int Start(LatencyOptions options)
         {
             Thread.Sleep(5000);
+            if (options.Trace)
+                Trace.Listeners.Add(new ConsoleTraceListener());
+
             var topicName = "perf-topic-" + DateTime.UtcNow.Ticks;
             var consumerGroupName = "perf-consumer-" + topicName;
 
@@ -34,7 +37,7 @@ namespace KafkaHttp.Net.TestConsole.Commands
 
                         receivedCount++;
                         if (receivedCount != options.Messages) return;
-                            
+
                         Console.WriteLine($"Received {options.Messages} messages.");
                         stream.Shutdown();
                     })
