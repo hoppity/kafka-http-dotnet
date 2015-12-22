@@ -24,13 +24,26 @@ namespace KafkaHttp.Net
 
         public Task CreateTopic(string name)
         {
-            Trace.TraceInformation("Creating topic...");
-            var waitHandle = new AutoResetEvent(false);
+            Trace.TraceInformation($"Creating topic {name}...");
 
-            _socket.On("topicCreated", o => waitHandle.Set());
-            _socket.Emit("createTopic", name);
+            var tcs = new TaskCompletionSource<object>();
+            _socket.Emit(
+                "createTopic", 
+                (e, d) =>
+                {
+                    if (e != null)
+                    {
+                        Trace.TraceError(e.ToString());
+                        tcs.SetException(new Exception(e.ToString()));
+                        return;
+                    }
 
-            return waitHandle.ToTask($"Failed to create topic {name}.", $"Created topic {name}.");
+                    Trace.TraceInformation($"Topic {name} created.");
+                    tcs.SetResult(true);
+                }
+                , name);
+
+            return tcs.Task;
         }
 
         public void Publish(params Message<string>[] payload)
