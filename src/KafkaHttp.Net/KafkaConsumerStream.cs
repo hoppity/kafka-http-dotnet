@@ -11,7 +11,6 @@ namespace KafkaHttp.Net
         IKafkaConsumerStream OnMessage(Action<Message<string>> action);
         IKafkaConsumerStream OnError(Action<Exception> action);
         IKafkaConsumerStream OnClose(Action action);
-        IKafkaConsumerStream OnOpen(Action action = null);
         IKafkaConsumerStream OnSubscribed(Action action);
         Task CreateTopic(string name);
         void Publish(params Message<string>[] payload);
@@ -25,39 +24,51 @@ namespace KafkaHttp.Net
         private readonly string _topic;
         private readonly Socket _socket;
         private readonly IJson _json;
-        private readonly EventWaitHandle _waitHandle;
+        private readonly EventWaitHandle _shutdownHandle;
 
-        public KafkaConsumerStream(string baseUri, string group, string topic)
+        public KafkaConsumerStream(Socket socket, string group, string topic)
         {
-            _group = @group;
+            _group = group;
             _topic = topic;
+            _socket = socket;
             _json = new Json();
-            _socket = IO.Socket(baseUri);
-            _waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+            _shutdownHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
-        public IKafkaConsumerStream OnOpen(Action action = null)
+        public IKafkaConsumerStream Start()
         {
-            Trace.TraceInformation("Openning conection...");
-            _socket.On(Socket.EVENT_CONNECT, () =>
-            {
-                Task.Run(() =>
-                {
-                    action?.Invoke();
+            if (_socket.Io().ReadyState == Manager.ReadyStateEnum.OPEN)
+                Subscribe();
+            else
+                Trace.TraceInformation("Watiting for socket to enter open state...");
 
-                    Trace.TraceInformation($"Connected. Subscribing to '{_topic}' as '{_group}'.");
-                    var args = _json.Serialize(new { group = _group, topic = _topic });
-                    _socket.Emit("subscribe", args);
-                });
-            });
+            _socket.On(Socket.EVENT_CONNECT, Subscribe);
 
             return this;
         }
 
+        private void Subscribe()
+        {
+            // If this happens while the socket is receiving the connect event then a large
+            // delay (~20s) is introduced due to a race condition. Instead, if we introduce
+            // a slight delay to ensure it happens after the connect event has fully been
+            // received we do not experience the large delay.
+            Task.Delay(10)
+                .ContinueWith(t =>
+            {
+                Trace.TraceInformation($"Connected. Subscribing to '{_topic}' as '{_group}'.");
+                var args = _json.Serialize(new {group = _group, topic = _topic});
+                _socket.Emit("subscribe", args);
+            });
+        }
+
         public IKafkaConsumerStream OnSubscribed(Action action)
         {
-            _socket.On("subscribed", () =>
+            _socket.On("subscribed", o =>
             {
+                var topic = o as string;
+                if (topic != _topic) return;
+
                 Trace.TraceInformation($"Subscribed to {_topic}.");
                 action();
             });
@@ -115,19 +126,19 @@ namespace KafkaHttp.Net
 
         public void Block()
         {
-            _waitHandle.WaitOne();
+            _shutdownHandle.WaitOne();
         }
 
         public void Shutdown()
         {
             _socket.Close();
-            _waitHandle.Set();
+            _shutdownHandle.Set();
         }
 
         public void Dispose()
         {
             Shutdown();
-            _waitHandle?.Dispose();
+            _shutdownHandle?.Dispose();
         }
     }
 }

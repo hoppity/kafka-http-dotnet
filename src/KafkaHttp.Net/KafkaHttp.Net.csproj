@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Json.cs" />
+    <Compile Include="KafkaClient.cs" />
     <Compile Include="KafkaConsumerStream.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

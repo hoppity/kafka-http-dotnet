@@ -1,53 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Quobject.SocketIoClientDotNet.Client;
 
 namespace KafkaHttp.Net
 {
     public interface IKafkaClient : IDisposable
     {
-        //IKafkaConsumer Consumer(string groupName);
-        //IKafkaTopic Topic(string name);
-        //Task<IReadOnlyList<string>> Topics();
+        IKafkaConsumerStream Consumer(string groupName, string topicName);
     }
 
     public class KafkaClient : IKafkaClient
     {
-        //private readonly IRestClient _restClient;
+        private Socket _socket;
 
-        //internal KafkaClient(IRestClient restClient)
-        //{
-        //    _restClient = restClient;
-        //}
+        public KafkaClient(string uri)
+        {
+            _socket = IO.Socket(uri);
+        }
 
-        //public KafkaClient(KafkaClientOptions clientOptions)
-        //{
-        //    _restClient = new RestClient(clientOptions);
-        //}
-
-        //public KafkaClient(string url) : this(new KafkaClientOptions { Uri = new Uri(url) })
-        //{
-        //}
-
-        //public IKafkaConsumer Consumer(string groupName)
-        //{
-        //    return new KafkaConsumer(_restClient, groupName);
-        //}
-
-        //public IKafkaTopic Topic(string name)
-        //{
-        //    return new KafkaTopic(_restClient, name);
-        //}
-
-        //public async Task<IReadOnlyList<string>> Topics()
-        //{
-        //    var topics = await _restClient.Get<List<string>>("topics");
-        //    return topics.AsReadOnly();
-        //}
+        public IKafkaConsumerStream Consumer(string groupName, string topicName)
+        {
+            return new KafkaConsumerStream(_socket, groupName, topicName).Start();
+        }
 
         public void Dispose()
         {
-            //    if (_restClient != null) _restClient.Dispose();
+            if (_socket == null) return;
+
+            _socket.Disconnect();
+            _socket = null;
         }
     }
 }

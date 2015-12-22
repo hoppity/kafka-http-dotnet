@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using KafkaHttp.Net.TestConsole.CommandLine;
 using Metrics;
@@ -8,10 +9,11 @@ namespace KafkaHttp.Net.TestConsole.Commands
 {
     public class Latency
     {
-        Histogram _received = Metric.Histogram("Received Messages", Unit.Items);
+        Metrics.Histogram _received = Metric.Histogram("Received Messages", Unit.Items);
+        Metrics.Timer _published = Metric.Timer("Published Messages", Unit.Requests);
+
         public int Start(LatencyOptions options)
         {
-            Thread.Sleep(5000);
             if (options.Trace)
                 Trace.Listeners.Add(new ConsoleTraceListener());
 
@@ -22,7 +24,8 @@ namespace KafkaHttp.Net.TestConsole.Commands
             Console.WriteLine("{0}: Consumer group - {1}", DateTime.Now.ToLongTimeString(), consumerGroupName);
             Metric.Config.WithReporting(r => r.WithConsoleReport(TimeSpan.FromSeconds(5)));
 
-            using (var stream = new KafkaConsumerStream(options.ApiUrl.ToString(), consumerGroupName, topicName))
+            using (var client = new KafkaClient(options.ApiUrl.ToString()))
+            using (var stream = client.Consumer(consumerGroupName, topicName))
             {
                 var receivedCount = 0;
                 stream
@@ -46,7 +49,6 @@ namespace KafkaHttp.Net.TestConsole.Commands
                         Console.Error.WriteLine(e);
                     })
                     .OnClose(() => Console.WriteLine("Socket closed."))
-                    .OnOpen(() => stream.CreateTopic(topicName).Wait())
                     .Block();
             }
 
@@ -59,19 +61,19 @@ namespace KafkaHttp.Net.TestConsole.Commands
         public void SetupProducer(IKafkaConsumerStream stream, string topic, int batchSize, int numMessages)
         {
             Console.WriteLine("Starting publisher...");
-            Task.Run(async () =>
+            Task.Run(() =>
             {
                 var published = 0;
                 while (published < numMessages)
                 {
-                    await Task.Delay(10);
-
+                    Thread.Sleep(10);
                     var payload = new Message<string>
                     {
                         Topic = topic,
                         Value = DateTime.UtcNow.Ticks.ToString()
                     };
-                    stream.Publish(payload);
+                    using (_published.NewContext())
+                        stream.Publish(payload);
                     published++;
                 }
                 Console.WriteLine($"Finshed publishing {numMessages} messages in batches of {batchSize}.");
