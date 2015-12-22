@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 using KafkaHttp.Net.TestConsole.CommandLine;
 using Metrics;
 
@@ -9,11 +8,12 @@ namespace KafkaHttp.Net.TestConsole.Commands
 {
     public class Latency
     {
-        Metrics.Histogram _received = Metric.Histogram("Received Messages", Unit.Items);
-        Metrics.Timer _published = Metric.Timer("Published Messages", Unit.Requests);
+        readonly Metrics.Timer _received = Metric.Timer("Received Messages", Unit.Requests);
+        readonly Metrics.Timer _published = Metric.Timer("Published Messages", Unit.Requests);
 
         public int Start(LatencyOptions options)
         {
+            Thread.Sleep(5000);
             if (options.Trace)
                 Trace.Listeners.Add(new ConsoleTraceListener());
 
@@ -29,32 +29,33 @@ namespace KafkaHttp.Net.TestConsole.Commands
             {
                 var producer = client.Producer();
                 client.OnOpen(async () =>
-                   {
-                       await producer.CreateTopic(topicName);
+                {
+                    await producer.CreateTopic(topicName);
 
-                       var receivedCount = 0;
-                       stream
-                           .OnSubscribed(() => SetupProducer(producer, topicName, options.BatchSize, options.Messages))
-                           .OnMessage(m =>
-                           {
-                               if (m.Value == null) return;
+                    var receivedCount = 0;
+                    stream
+                        .OnSubscribed(() => SetupProducer(producer, topicName, options.BatchSize, options.Messages))
+                        .OnMessage(m =>
+                        {
+                            if (m.Value == null) return;
 
-                               var ticks = DateTime.UtcNow.Ticks;
-                               var t = (long)TimeSpan.FromTicks(ticks - long.Parse(m.Value)).TotalMilliseconds;
-                               _received.Update(t);
-                               
-                               receivedCount++;
-                               if (receivedCount != options.Messages) return;
+                            var ticks = DateTime.UtcNow.Ticks;
+                            var t = (long)TimeSpan.FromTicks(ticks - long.Parse(m.Value)).TotalMilliseconds;
+                            _received.Record(t, TimeUnit.Milliseconds);
 
-                               Console.WriteLine($"Received {options.Messages} messages.");
-                               stream.Shutdown();
-                           })
-                           .OnError(e =>
-                           {
-                               Console.Error.WriteLine(e);
-                           })
-                           .OnClose(() => Console.WriteLine("Socket closed."));
-                   });
+                            receivedCount++;
+                            if (receivedCount != options.Messages) return;
+
+                            Console.WriteLine($"Received {options.Messages} messages.");
+                            stream.Shutdown();
+                        })
+                        .OnError(e =>
+                        {
+                            Console.Error.WriteLine(e);
+                        })
+                        .OnClose(() => Console.WriteLine("Socket closed."))
+                        .Start();
+                });
                 stream.Block();
             }
 
@@ -64,10 +65,10 @@ namespace KafkaHttp.Net.TestConsole.Commands
             return 0;
         }
 
-        public void SetupProducer(IKafkaProducer producer, string topic, int batchSize, int numMessages)
+        public Thread SetupProducer(IKafkaProducer producer, string topic, int batchSize, int numMessages)
         {
             Console.WriteLine("Starting publisher...");
-            Task.Run(() =>
+            var t = new Thread(() =>
             {
                 var published = 0;
                 while (published < numMessages)
@@ -84,6 +85,8 @@ namespace KafkaHttp.Net.TestConsole.Commands
                 }
                 Console.WriteLine($"Finshed publishing {numMessages} messages in batches of {batchSize}.");
             });
+            t.Start();
+            return t;
         }
     }
 }

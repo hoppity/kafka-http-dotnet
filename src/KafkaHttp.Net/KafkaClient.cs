@@ -25,7 +25,7 @@ namespace KafkaHttp.Net
 
         public IKafkaConsumerStream Consumer(string groupName, string topicName)
         {
-            return new KafkaConsumerStream(_socket, groupName, topicName).Start();
+            return new KafkaConsumerStream(_socket, groupName, topicName);
         }
 
         public IKafkaProducer Producer()
