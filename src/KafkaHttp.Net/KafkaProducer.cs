@@ -1,5 +1,5 @@
-﻿using System.Diagnostics;
-using System.Threading;
+﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Quobject.SocketIoClientDotNet.Client;
 
@@ -8,7 +8,7 @@ namespace KafkaHttp.Net
     public interface IKafkaProducer
     {
         Task CreateTopic(string name);
-        void Publish(params Message<string>[] payload);
+        Task Publish(params Message<string>[] payload);
     }
 
     public class KafkaProducer : IKafkaProducer
@@ -46,9 +46,24 @@ namespace KafkaHttp.Net
             return tcs.Task;
         }
 
-        public void Publish(params Message<string>[] payload)
+        public Task Publish(params Message<string>[] payload)
         {
-            _socket.Emit("publish", _json.Serialize(payload));
+            var tcs = new TaskCompletionSource<object>();
+            _socket.Emit(
+                "publish",
+                (e, d) =>
+                {
+                    if (e != null)
+                    {
+                        Trace.TraceError(e.ToString());
+                        tcs.SetException(new Exception(e.ToString()));
+                        return;
+                    }
+                    
+                    tcs.SetResult(true);
+                },
+                _json.Serialize(payload));
+            return tcs.Task;
         }
     }
 }

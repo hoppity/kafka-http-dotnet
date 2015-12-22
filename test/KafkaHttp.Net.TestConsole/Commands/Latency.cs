@@ -68,19 +68,18 @@ namespace KafkaHttp.Net.TestConsole.Commands
         public Thread SetupProducer(IKafkaProducer producer, string topic, int batchSize, int numMessages)
         {
             Console.WriteLine("Starting publisher...");
-            var t = new Thread(() =>
+            var t = new Thread(async () =>
             {
                 var published = 0;
                 while (published < numMessages)
                 {
-                    Thread.Sleep(10);
                     var payload = new Message<string>
                     {
                         Topic = topic,
                         Value = DateTime.UtcNow.Ticks.ToString()
                     };
                     using (_published.NewContext())
-                        producer.Publish(payload);
+                        await producer.Publish(payload);
                     published++;
                 }
                 Console.WriteLine($"Finshed publishing {numMessages} messages in batches of {batchSize}.");
