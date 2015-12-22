@@ -22,7 +22,6 @@ namespace KafkaHttp.Net.TestConsole.Commands
 
             Console.WriteLine("{0}: Topic - {1}", DateTime.Now.ToLongTimeString(), topicName);
             Console.WriteLine("{0}: Consumer group - {1}", DateTime.Now.ToLongTimeString(), consumerGroupName);
-            Metric.Config.WithReporting(r => r.WithConsoleReport(TimeSpan.FromSeconds(5)));
 
             using (var client = new KafkaClient(options.ApiUrl.ToString()))
             using (var stream = client.Consumer(consumerGroupName, topicName))
@@ -31,6 +30,8 @@ namespace KafkaHttp.Net.TestConsole.Commands
                 client.OnOpen(async () =>
                 {
                     await producer.CreateTopic(topicName);
+
+                    Metric.Config.WithReporting(r => r.WithConsoleReport(TimeSpan.FromSeconds(5)));
 
                     var receivedCount = 0;
                     stream

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Web;
 using Quobject.SocketIoClientDotNet.Client;
 
 namespace KafkaHttp.Net
@@ -13,6 +14,9 @@ namespace KafkaHttp.Net
 
     public class KafkaProducer : IKafkaProducer
     {
+        public const int CreateTopicTimeout = 10000;
+        public const int PublishTimeout = 10000;
+
         private readonly Socket _socket;
         private readonly Json _json;
 
@@ -28,13 +32,13 @@ namespace KafkaHttp.Net
 
             var tcs = new TaskCompletionSource<object>();
             _socket.Emit(
-                "createTopic", 
+                "createTopic",
                 (e, d) =>
                 {
                     if (e != null)
                     {
                         Trace.TraceError(e.ToString());
-                        tcs.SetException(new Exception(e.ToString()));
+                        tcs.SetException(new Exception($"An error occurred creating topic {name}: {e}"));
                         return;
                     }
 
@@ -43,7 +47,8 @@ namespace KafkaHttp.Net
                 }
                 , name);
 
-            return tcs.Task;
+
+            return tcs.Task.TimeoutAfter(CreateTopicTimeout, $"Timeout occured while creating topic {name}.");
         }
 
         public Task Publish(params Message<string>[] payload)
@@ -59,11 +64,12 @@ namespace KafkaHttp.Net
                         tcs.SetException(new Exception(e.ToString()));
                         return;
                     }
-                    
+
                     tcs.SetResult(true);
                 },
                 _json.Serialize(payload));
-            return tcs.Task;
+
+            return tcs.Task.TimeoutAfter(PublishTimeout, "Timeout occured while publishing payload.");
         }
     }
 }
