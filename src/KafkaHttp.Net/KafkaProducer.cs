@@ -1,6 +1,7 @@
-﻿using System.Diagnostics;
-using System.Threading;
+﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Web;
 using Quobject.SocketIoClientDotNet.Client;
 
 namespace KafkaHttp.Net
@@ -8,11 +9,14 @@ namespace KafkaHttp.Net
     public interface IKafkaProducer
     {
         Task CreateTopic(string name);
-        void Publish(params Message<string>[] payload);
+        Task Publish(params Message<string>[] payload);
     }
 
     public class KafkaProducer : IKafkaProducer
     {
+        public const int CreateTopicTimeout = 10000;
+        public const int PublishTimeout = 10000;
+
         private readonly Socket _socket;
         private readonly Json _json;
 
@@ -24,18 +28,48 @@ namespace KafkaHttp.Net
 
         public Task CreateTopic(string name)
         {
-            Trace.TraceInformation("Creating topic...");
-            var waitHandle = new AutoResetEvent(false);
+            Trace.TraceInformation($"Creating topic {name}...");
 
-            _socket.On("topicCreated", o => waitHandle.Set());
-            _socket.Emit("createTopic", name);
+            var tcs = new TaskCompletionSource<object>();
+            _socket.Emit(
+                "createTopic",
+                (e, d) =>
+                {
+                    if (e != null)
+                    {
+                        Trace.TraceError(e.ToString());
+                        tcs.SetException(new Exception($"An error occurred creating topic {name}: {e}"));
+                        return;
+                    }
 
-            return waitHandle.ToTask($"Failed to create topic {name}.", $"Created topic {name}.");
+                    Trace.TraceInformation($"Topic {name} created.");
+                    tcs.SetResult(true);
+                }
+                , name);
+
+
+            return tcs.Task.TimeoutAfter(CreateTopicTimeout, $"Timeout occured while creating topic {name}.");
         }
 
-        public void Publish(params Message<string>[] payload)
+        public Task Publish(params Message<string>[] payload)
         {
-            _socket.Emit("publish", _json.Serialize(payload));
+            var tcs = new TaskCompletionSource<object>();
+            _socket.Emit(
+                "publish",
+                (e, d) =>
+                {
+                    if (e != null)
+                    {
+                        Trace.TraceError(e.ToString());
+                        tcs.SetException(new Exception(e.ToString()));
+                        return;
+                    }
+
+                    tcs.SetResult(true);
+                },
+                _json.Serialize(payload));
+
+            return tcs.Task.TimeoutAfter(PublishTimeout, "Timeout occured while publishing payload.");
         }
     }
 }

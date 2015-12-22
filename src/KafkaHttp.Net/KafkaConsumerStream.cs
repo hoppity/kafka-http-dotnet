@@ -1,17 +1,20 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Quobject.EngineIoClientDotNet.ComponentEmitter;
 using Quobject.SocketIoClientDotNet.Client;
 
 namespace KafkaHttp.Net
 {
     public interface IKafkaConsumerStream : IDisposable
     {
-        IKafkaConsumerStream OnMessage(Action<Message<string>> action);
+        IKafkaConsumerStream OnMessage(Action<ReceivedMessage> action);
         IKafkaConsumerStream OnError(Action<Exception> action);
         IKafkaConsumerStream OnClose(Action action);
         IKafkaConsumerStream OnSubscribed(Action action);
+        IKafkaConsumerStream Start();
         void Block();
         void Shutdown();
     }
@@ -55,7 +58,7 @@ namespace KafkaHttp.Net
                 .ContinueWith(t =>
             {
                 Trace.TraceInformation($"Connected. Subscribing to '{_topic}' as '{_group}'.");
-                var args = _json.Serialize(new {group = _group, topic = _topic});
+                var args = _json.Serialize(new { group = _group, topic = _topic });
                 _socket.Emit("subscribe", args);
             });
         }
@@ -73,15 +76,15 @@ namespace KafkaHttp.Net
             return this;
         }
 
-        public IKafkaConsumerStream OnMessage(Action<Message<string>> action)
+        public IKafkaConsumerStream OnMessage(Action<ReceivedMessage> action)
         {
             Trace.TraceInformation("Subscribing to 'message' event.");
             _socket.On("message", o =>
-            {
-                var text = o.ToString();
-                var message = _json.Deserialize<Message<string>>(text);
-                action(message);
-            });
+                {
+                    var text = o.ToString();
+                    var message = _json.Deserialize<ReceivedMessage>(text);
+                    action(message);
+                });
             return this;
         }
 

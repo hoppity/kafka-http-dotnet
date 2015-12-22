@@ -63,6 +63,7 @@
     <Compile Include="KafkaProducer.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TaskExtensions.cs" />
     <Compile Include="WaitHandleExtensions.cs" />
   </ItemGroup>
   <ItemGroup>

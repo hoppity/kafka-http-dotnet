@@ -11,4 +11,9 @@
         public int? Partition { get; set; }
         public string Topic { get; set; }
     }
+
+    public class ReceivedMessage : Message<string>
+    {
+        public long Offset { get; set; }
+    }
 }
