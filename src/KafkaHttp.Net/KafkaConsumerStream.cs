@@ -12,8 +12,6 @@ namespace KafkaHttp.Net
         IKafkaConsumerStream OnError(Action<Exception> action);
         IKafkaConsumerStream OnClose(Action action);
         IKafkaConsumerStream OnSubscribed(Action action);
-        Task CreateTopic(string name);
-        void Publish(params Message<string>[] payload);
         void Block();
         void Shutdown();
     }
@@ -106,22 +104,6 @@ namespace KafkaHttp.Net
             Trace.TraceInformation("Subscribing to 'disconnect' event.");
             _socket.On(Socket.EVENT_DISCONNECT, action);
             return this;
-        }
-
-        public Task CreateTopic(string name)
-        {
-            Trace.TraceInformation("Creating topic...");
-            var waitHandle = new AutoResetEvent(false);
-
-            _socket.On("topicCreated", o => waitHandle.Set());
-            _socket.Emit("createTopic", name);
-
-            return waitHandle.ToTask($"Failed to create topic {name}.", $"Created topic {name}.");
-        }
-
-        public void Publish(params Message<string>[] payload)
-        {
-            _socket.Emit("publish", _json.Serialize(payload));
         }
 
         public void Block()

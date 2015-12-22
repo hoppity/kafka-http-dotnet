@@ -27,29 +27,35 @@ namespace KafkaHttp.Net.TestConsole.Commands
             using (var client = new KafkaClient(options.ApiUrl.ToString()))
             using (var stream = client.Consumer(consumerGroupName, topicName))
             {
-                var receivedCount = 0;
-                stream
-                    .OnSubscribed(() => SetupProducer(stream, topicName, options.BatchSize, options.Messages))
-                    .OnMessage(m =>
-                    {
-                        if (m.Value == null) return;
+                var producer = client.Producer();
+                client.OnOpen(async () =>
+                   {
+                       await producer.CreateTopic(topicName);
 
-                        var ticks = DateTime.UtcNow.Ticks;
-                        var t = (long)TimeSpan.FromTicks(ticks - long.Parse(m.Value)).TotalMilliseconds;
-                        _received.Update(t);
+                       var receivedCount = 0;
+                       stream
+                           .OnSubscribed(() => SetupProducer(producer, topicName, options.BatchSize, options.Messages))
+                           .OnMessage(m =>
+                           {
+                               if (m.Value == null) return;
 
-                        receivedCount++;
-                        if (receivedCount != options.Messages) return;
+                               var ticks = DateTime.UtcNow.Ticks;
+                               var t = (long)TimeSpan.FromTicks(ticks - long.Parse(m.Value)).TotalMilliseconds;
+                               _received.Update(t);
+                               
+                               receivedCount++;
+                               if (receivedCount != options.Messages) return;
 
-                        Console.WriteLine($"Received {options.Messages} messages.");
-                        stream.Shutdown();
-                    })
-                    .OnError(e =>
-                    {
-                        Console.Error.WriteLine(e);
-                    })
-                    .OnClose(() => Console.WriteLine("Socket closed."))
-                    .Block();
+                               Console.WriteLine($"Received {options.Messages} messages.");
+                               stream.Shutdown();
+                           })
+                           .OnError(e =>
+                           {
+                               Console.Error.WriteLine(e);
+                           })
+                           .OnClose(() => Console.WriteLine("Socket closed."));
+                   });
+                stream.Block();
             }
 
             Console.WriteLine("Waiting 5sec to show latest metrics.");
@@ -58,7 +64,7 @@ namespace KafkaHttp.Net.TestConsole.Commands
             return 0;
         }
 
-        public void SetupProducer(IKafkaConsumerStream stream, string topic, int batchSize, int numMessages)
+        public void SetupProducer(IKafkaProducer producer, string topic, int batchSize, int numMessages)
         {
             Console.WriteLine("Starting publisher...");
             Task.Run(() =>
@@ -73,7 +79,7 @@ namespace KafkaHttp.Net.TestConsole.Commands
                         Value = DateTime.UtcNow.Ticks.ToString()
                     };
                     using (_published.NewContext())
-                        stream.Publish(payload);
+                        producer.Publish(payload);
                     published++;
                 }
                 Console.WriteLine($"Finshed publishing {numMessages} messages in batches of {batchSize}.");

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Quobject.SocketIoClientDotNet.Client;
 
 namespace KafkaHttp.Net
@@ -8,6 +6,7 @@ namespace KafkaHttp.Net
     public interface IKafkaClient : IDisposable
     {
         IKafkaConsumerStream Consumer(string groupName, string topicName);
+        IKafkaProducer Producer();
     }
 
     public class KafkaClient : IKafkaClient
@@ -19,9 +18,19 @@ namespace KafkaHttp.Net
             _socket = IO.Socket(uri);
         }
 
+        public void OnOpen(Action callback)
+        {
+            _socket.On(Socket.EVENT_CONNECT, callback);
+        }
+
         public IKafkaConsumerStream Consumer(string groupName, string topicName)
         {
             return new KafkaConsumerStream(_socket, groupName, topicName).Start();
+        }
+
+        public IKafkaProducer Producer()
+        {
+            return new KafkaProducer(_socket);
         }
 
         public void Dispose()

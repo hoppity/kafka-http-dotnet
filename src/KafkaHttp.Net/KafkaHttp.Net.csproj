@@ -60,6 +60,7 @@
     <Compile Include="Json.cs" />
     <Compile Include="KafkaClient.cs" />
     <Compile Include="KafkaConsumerStream.cs" />
+    <Compile Include="KafkaProducer.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WaitHandleExtensions.cs" />
